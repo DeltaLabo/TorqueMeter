@@ -77,13 +77,13 @@ void loop() {
   diferencialPresion = presion();
   pantalla(velocidadAngular, torque, diferencialPresion);
   // Imprimir los valores para verificar que son correctos antes de enviarlos
-  Serial.println("");
+/*   Serial.println("");
   Serial.print("Velocidad Angular: ");
   Serial.println(velocidadAngular);
   Serial.print("Torque: ");
   Serial.println(torque);
   Serial.print("Diferencial de Presión: ");
-  Serial.println(diferencialPresion);
+  Serial.println(diferencialPresion); */
   
   sendFrame(velocidadAngular, torque, diferencialPresion);
   delay(1000);  // Espera 1 segundo antes de enviar el siguiente frame
