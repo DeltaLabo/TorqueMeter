@@ -38,8 +38,8 @@ const int SensorPresion2 = A2;  // Pin analógico para el segundo sensor
 // Definir las constantes del sensor
 const float voltajeMin = 0.5;   // Voltaje mínimo del sensor (en V)
 const float voltajeMax = 4.5;   // Voltaje máximo del sensor (en V)
-const float presionMin = 0.0;   // Presión mínima (en MPa)
-const float presionMax = 20.0;  // Presión máxima (en MPa)
+const float presionMin = 0.0;   // Presión mínima (en psi)
+const float presionMax = 200.0;  // Presión máxima (en psi)
 
 // Variables para almacenar los valores leídos
 float voltajepresion1, voltajepresion2;
@@ -74,7 +74,7 @@ void setup() {
 void loop() {
   velocidadAngular = Vangular();
   torque = Ftorque();
-  diferencialPresion = presion();
+  presion1, presion2, diferencialPresion = presion();
   pantalla(velocidadAngular, torque, diferencialPresion);
   // Imprimir los valores para verificar que son correctos antes de enviarlos
 /*   Serial.println("");
@@ -85,8 +85,8 @@ void loop() {
   Serial.print("Diferencial de Presión: ");
   Serial.println(diferencialPresion); */
   
-  sendFrame(velocidadAngular, torque, diferencialPresion);
-  delay(1000);  // Espera 1 segundo antes de enviar el siguiente frame
+  sendFrame(velocidadAngular, torque, diferencialPresion, presion1, presion2);
+  delay(1000);  // Espera 1 segundos antes de enviar el siguiente frame
 }
 
 void printWithSpaces(float value, int width, int decimals = 0) {
@@ -128,27 +128,25 @@ void pantalla(float velocidadAngular, float torque, float diferencialPresion){
   lcd.print("psi");
 }
 
-void sendFrame(float V, float T, float P) {
-  byte frame[16];  // Tamaño total del frame: 1 start byte, 1 length byte, 12 data bytes (3 floats), 1 checksum byte, 1 stop byte
+void sendFrame(int V, int T, int P, int P1, int P2) {
+  byte frame[24];  // Tamaño total del frame: 1 start byte, 1 length byte, 20 data bytes, 1 checksum byte, 1 stop byte
   
   // Armar el frame
   frame[0] = START_BYTE;
-  frame[1] = 12;  // Longitud de los datos (3 floats de 4 bytes cada uno)
+  frame[1] = 20;  // Longitud de los datos (5 floats de 4 bytes cada uno)
   
   // Copiar los datos float en el frame
   memcpy(&frame[2], &V, 4);  // Copia de 4 bytes del float V
   memcpy(&frame[6], &T, 4);  // Copia de 4 bytes del float T
-   // Imprimir del byte 0 al byte 10 del frame
   memcpy(&frame[10], &P, 4); // Copia de 4 bytes del float P
+  memcpy(&frame[14], &P1, 4); // Copia de 4 bytes del float P1
+  memcpy(&frame[18], &P2, 4); // Copia de 4 bytes del float P2
+  
   // Calcular el checksum
-  frame[14] = calculateChecksum(&frame[2], 12);
+  frame[22] = calculateChecksum(&frame[2], 20);
   
   // Añadir el stop byte
-  frame[15] = STOP_BYTE;
-
-  
-  printFrameRange(frame, 0, 15);
-  Serial.println("");
+  frame[23] = STOP_BYTE;
   
   // Enviar el frame completo
   Serial.write(frame, sizeof(frame));
@@ -238,7 +236,7 @@ float presion() {
   Serial.print(diferencialPresion);
   Serial.println(" psi");
 */
-  return diferencialPresion;
+  return presion1,presion2,diferencialPresion;
 }
 
 // Función para mapear el voltaje a la presión
@@ -256,4 +254,3 @@ void contarPulsos() {
   // Incrementar el contador de pulsos en cada flanco ascendente
   contadorPulsos++;
 }
-
