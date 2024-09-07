@@ -46,7 +46,7 @@ float voltajepresion1, voltajepresion2;
 float presion1, presion2, diferencialPresion;
 
 // Función para calcular el checksum (en este caso, suma de todos los datos)
-byte calculateChecksum(byte *data, int length) {
+byte calculateChecksum(byte* data, int length) {
   byte checksum = 0;
   for (int i = 0; i < length; i++) {
     checksum ^= data[i];  // XOR simple para checksum
@@ -128,7 +128,7 @@ void pantalla(float velocidadAngular, float torque, float diferencialPresion){
   lcd.print("psi");
 }
 
-void sendFrame(int V, int T, int P, int P1, int P2) {
+void sendFrame(float V, float T, float P, float P1, float P2) {
   byte frame[24];  // Tamaño total del frame: 1 start byte, 1 length byte, 20 data bytes, 1 checksum byte, 1 stop byte
   
   // Armar el frame

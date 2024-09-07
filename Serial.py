@@ -28,21 +28,21 @@ pressure_diff_data_persistent = []
 
 #Plotting setup
 plt.style.use('fivethirtyeight')
-fig, ax = plt.subplots()
-fig, bx = plt.subplots()
-fig, cx = plt.subplots()
+fig1, V = plt.subplots()
+fig2, T = plt.subplots()
+fig3, P = plt.subplots()
 
-ax.set_title('') 
-ax.set_xlabel('')
-ax.set_ylabel('')
+V.set_title('') 
+V.set_xlabel('')
+V.set_ylabel('')
 
-bx.set_title('') 
-bx.set_xlabel('')
-bx.set_ylabel('')
+T.set_title('') 
+T.set_xlabel('')
+T.set_ylabel('')
 
-cx.set_title('') 
-cx.set_xlabel('')
-cx.set_ylabel('')
+P.set_title('') 
+P.set_xlabel('')
+P.set_ylabel('')
 
 #Function definition
 def update(frame):
@@ -93,35 +93,38 @@ def update(frame):
                 pressure_diff_data.pop(0)
 
             #clear the plot and plot new data
-            ax.clear()
-            ax.plot(x_data,angular_velocity_data)
 
-            ax.set_title('Angular Velocity vs Time') 
-            ax.set_xlabel('Time since test start (s)')
-            ax.set_ylabel('Angular Velocity (rad/s)')
+            V.clear()
+            V.plot(x_data,angular_velocity_data)
 
-            bx.clear()
-            bx.plot(x_data,torque_data)
+            V.set_title('Angular Velocity vs Time') 
+            V.set_xlabel('Time since test start (s)')
+            V.set_ylabel('Angular Velocity (rad/s)')
 
-            bx.set_title('Torque vs Time') 
-            bx.set_xlabel('Time since test start (s)')
-            bx.set_ylabel('Torque (T)')
+            T.clear()
+            T.plot(x_data,torque_data)
 
-            cx.clear()
-            cx.plot(x_data,pressure_diff_data)
+            T.set_title('Torque vs Time') 
+            T.set_xlabel('Time since test start (s)')
+            T.set_ylabel('Torque (T)')
+        
+            P.clear()
+            P.plot(x_data,pressure_diff_data)
 
-            cx.set_title('Differential Pressure vs Time') 
-            cx.set_xlabel('Time since test start (s)')
-            cx.set_ylabel('Differential Pressure (psi)')
-
+            P.set_title('Differential Pressure vs Time') 
+            P.set_xlabel('Time since test start (s)')
+            P.set_ylabel('Differential Pressure (psi)')
+            
         except struct.error:
             print('Invalid data received')
 
-t0_timestamp = time.strftime("%H:%M:%S")
+t0_timestamp = time.strftime("%d-%m-%Y_%H:%M:%S")
 t0 = time.time()
 
 #animation function
-ani = FuncAnimation(fig,update,interval=100)
+ani1 = FuncAnimation(fig1,update,interval=100)
+ani2 = FuncAnimation(fig2,update,interval=100)
+ani3 = FuncAnimation(fig3,update,interval=100)
 
 plt.show()
 
@@ -135,4 +138,4 @@ csv_data = {
 }
 
 csv_data = pd.DataFrame(csv_data)
-csv_data.to_csv('torquemeter-' + t0_timestamp + '.csv', index=False)
+csv_data.to_csv('Data/torquemeter_' + t0_timestamp + '.csv', index=False)
