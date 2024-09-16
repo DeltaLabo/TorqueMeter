@@ -74,7 +74,7 @@ void setup() {
 void loop() {
   velocidadAngular = Vangular();
   torque = Ftorque();
-  presion1, presion2, diferencialPresion = presion();
+  diferencialPresion = presion();
   pantalla(velocidadAngular, torque, diferencialPresion);
   // Imprimir los valores para verificar que son correctos antes de enviarlos
 /*   Serial.println("");
