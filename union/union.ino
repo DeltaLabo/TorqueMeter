@@ -1,6 +1,8 @@
 #define START_BYTE 0xDD
 #define STOP_BYTE  0x77
 #define scaleFactor 10 // Adjust this according to your torque sensor's scale
+#define STAR_MESSAGE 0x4D
+#define STOP_MESSAGE 0x5A
 
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -34,6 +36,11 @@ const float voltajeMax = 4.5;   // Max sensor voltage (V)
 const float presionMin = 0.0;   // Min pressure (psi)
 const float presionMax = 200.0; // Max pressure (psi)
 
+//flags
+bool star_flag = false;
+
+byte line = 0;
+
 typedef struct presionTipo {
   float presion1;
   float presion2;
@@ -61,13 +68,29 @@ void setup() {
 }
 
 void loop() {
-  velocidadAngular = Vangular();  // Calculate angular velocity
-  torque = Ftorque();             // Calculate torque
-  datos_presion = presion();       // Get pressure readings
-  pantalla(velocidadAngular, torque, datos_presion.deltap);  // Update LCD display
+  if (Serial.available() > 0){
+    line = Serial.read();
+  
+    if (line == STAR_MESSAGE){
+      star_flag = true;
+    }
 
-  sendFrame(velocidadAngular, torque, datos_presion.deltap, datos_presion.presion1, datos_presion.presion2);
-  delay(1000);  // Delay 1 second before sending the next frame
+    if (line == STOP_MESSAGE){
+      star_flag = false;
+    }
+
+    if (star_flag){
+      velocidadAngular = Vangular();  // Calculate angular velocity
+      torque = Ftorque();             // Calculate torque
+      datos_presion = presion();       // Get pressure readings
+    
+      pantalla(velocidadAngular, torque, datos_presion.deltap);  // Update LCD display
+
+      sendFrame(velocidadAngular, torque, datos_presion.deltap, datos_presion.presion1, datos_presion.presion2);
+    
+      delay(1000);  // Delay 1 second before sending the next frame
+    }
+  }
 }
 
 // Function to print formatted data on LCD
@@ -146,10 +169,10 @@ presionTipo presion() {
 
   presionTipo datos_presion = {0};
 
-  float voltajepresion1 = lecturaAnalogica1 * (4.5 / 1023.0);
+  float voltajepresion1 = lecturaAnalogica1 * (V_REF / 1023.0);
   voltajepresion1 = ((voltajepresion1 - voltajeMin) / (voltajeMax - voltajeMin)) * presionMax;
 
-  float voltajepresion2 = lecturaAnalogica2 * (4.5 / 1023.0);
+  float voltajepresion2 = lecturaAnalogica2 * (V_REF / 1023.0);
   voltajepresion2 = ((voltajepresion2 - voltajeMin) / (voltajeMax - voltajeMin)) * presionMax;
 
   datos_presion.presion1 = abs(voltajepresion1);
