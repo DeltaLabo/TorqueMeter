@@ -71,7 +71,7 @@ start = "4D"
 stop = "5A"
 
 # SAVE PATH
-csv_file_path = 'Results/data_log_{state}.csv'
+csv_file_path = 'Data/Results.csv'
 
 # Configurar la comunicación serial
 try: 
@@ -94,7 +94,7 @@ def read_serial_data():
             print("Datos recividos:")
             print(packet)
             process_serial_data(packet)
-        root.after(10, read_serial_data)
+        root.after(100, read_serial_data)
     except:
         print("NEL PERRO")
         root.after(10, read_serial_data)
