@@ -5,6 +5,7 @@ import serial
 import struct
 from datetime import datetime
 import csv
+import threading
 
 ################################################################
 #                                                              #
@@ -29,28 +30,25 @@ def recibir_hex():
 #                                                              #
 ################################################################
 
+def tiempo_agotado():
+    eventStop()
+    clear_data()
+
 def eventStart():
     try:
+        expTime = 60 * int(stop_display.get())
         enviar_hex(start)
-        recibido = recibir_hex()
+        temporizador = threading.Timer(expTime, tiempo_agotado)
+        temporizador.start()
     except:
         print("ERROR")
 
 def eventStop():
     try:
         enviar_hex(stop)
-        recibido = recibir_hex()
+        clear_data()
     except:
         print("ERROR")
-
-def eventLoad():
-    try:
-        # enviar_hex(start)
-        # recibido = recibir_hex()
-        print("OUT OF SERVICE")
-    except:
-        print("ERROR")
-
 
 ################################################################
 #                                                              #
@@ -66,6 +64,7 @@ p2 = []
 dp = []
 torque = []
 angularVelocity = []
+expTime = 1
 
 # MESSAGES
 start = "4D"
@@ -76,7 +75,7 @@ csv_file_path = 'Results/data_log_{state}.csv'
 
 # Configurar la comunicación serial
 try: 
-    serial_port = '/dev/ttyACM0'
+    serial_port = "COM18" # '/dev/ttyACM0'
     baud_rate = 9600 
     ser = serial.Serial(serial_port, baud_rate)
 except:
@@ -90,7 +89,7 @@ except:
 
 def read_serial_data():
     try:
-        if ser.in_waiting >= 17:  # Check if there's enough data for a full packet
+        if ser.in_waiting > 23:  # Check if there's enough data for a full packet
             packet = ser.read_all()
             print("Datos recividos:")
             print(packet)
@@ -98,26 +97,27 @@ def read_serial_data():
         root.after(10, read_serial_data)
     except:
         print("NEL PERRO")
+        root.after(10, read_serial_data)
 
 def process_serial_data(line):
     global dataNumber, p1, p2, dp, torque, angularVelocity, time
     
     try:         
         #Unpack data
-        angularVelocity.append(struct.unpack('f', line[2:6])[0])
-        torque.append(struct.unpack('f', line[6:10])[0])
-        dp.append(struct.unpack('f', line[10:14])[0])
-        p1.append(struct.unpack('f', line[14:18])[0])
-        p2.append(struct.unpack('f', line[18:22])[0])
+        angularVelocity.append(round(struct.unpack('f', line[2:6])[0], 3))
+        torque.append(round(struct.unpack('f', line[6:10])[0], 3))
+        dp.append(round(struct.unpack('f', line[10:14])[0], 3))
+        p1.append(round(struct.unpack('f', line[14:18])[0], 3))
+        p2.append(round(struct.unpack('f', line[18:22])[0], 3))
         time.append(dataNumber)
 
         # Preparar los datos para guardar en CSV
         csv_data = [
-            p1[0],
-            p2[0],
-            dp[0],
-            angularVelocity[0],
-            torque[0],
+            p1[-1],
+            p2[-1],
+            dp[-1],
+            angularVelocity[-1],
+            torque[-1],
             dataNumber]
         
         # Guardar datos en CSV
@@ -171,7 +171,7 @@ def update_graphs():
     canvasPresGraph.draw()
 
     axAngularGraph.clear()
-    axAngularGraph.plot(range(len(time)), dp)
+    axAngularGraph.plot(range(len(time)), angularVelocity)
     axAngularGraph.set_xlabel('Time (s)', fontsize=12)
     axAngularGraph.set_ylabel('Angular Velocity (rad/s)', fontsize=12)
     axAngularGraph.set_title("Angular Velocity vs Time", fontsize=12)
@@ -181,7 +181,7 @@ def update_graphs():
     canvasAngularGraph.draw()
 
     axTorqGraph.clear()
-    axTorqGraph.plot(range(len(time)), dp)
+    axTorqGraph.plot(range(len(time)), torque)
     axTorqGraph.set_xlabel('Time (s)', fontsize=12)
     axTorqGraph.set_ylabel('Torque (Nm)', fontsize=12)
     axTorqGraph.set_title("Torque vs Time", fontsize=12)
@@ -256,7 +256,7 @@ root.geometry("1250x700")
 # Main frame for calibration
 MainFrame = customtkinter.CTkFrame(root)
 MainFrame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
-MainFrame.grid_rowconfigure(0, weight=10)
+MainFrame.grid_rowconfigure(0, weight=5)
 MainFrame.grid_rowconfigure(1, weight=1)
 MainFrame.grid_rowconfigure(2, weight=1)
 MainFrame.grid_columnconfigure(0, weight=1)
@@ -282,6 +282,12 @@ ButtonFrame.grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
 ButtonFrame.grid_columnconfigure(0, weight=1)
 ButtonFrame.grid_columnconfigure(1, weight=1)
 ButtonFrame.grid_columnconfigure(2, weight=1)
+
+# Furation Frame
+stopFrame = customtkinter.CTkFrame(master=ButtonFrame)
+stopFrame.grid(row=0, column=2, padx=1, pady=1, sticky="nsew")
+stopFrame.grid_rowconfigure(0, weight=1)
+stopFrame.grid_rowconfigure(1, weight=1)
 
 # RESIZE
 root.grid_rowconfigure(0, weight=1)
@@ -322,8 +328,11 @@ buttonStart.grid(row = 0, column = 0, padx = 2, pady = 2, sticky="nsew")
 buttonStop = customtkinter.CTkButton(text="STOP TEST", command=eventStop, master=ButtonFrame, height=50)
 buttonStop.grid(row = 0, column = 1, padx = 2, pady = 2, sticky="nsew")
 
-buttonLoad = customtkinter.CTkButton(text="LOAD DATA", command=eventLoad, master=ButtonFrame, height=50)
-buttonLoad.grid(row = 0, column = 2, padx = 2, pady = 2, sticky="nsew")
+# Time Entry
+stop_label = customtkinter.CTkLabel(stopFrame, text="Experiment Duration (min): ")
+stop_label.grid(row = 0, column = 0, padx = 2, pady = 2, sticky="nsew")
+stop_display = customtkinter.CTkEntry(stopFrame, justify = "center", textvariable = customtkinter.StringVar(stopFrame, "1"))
+stop_display.grid(row = 1, column = 0, padx=2, pady=2)
 
 # Labels
 dp_label = customtkinter.CTkLabel(DataFrame, text="Pressure Difference (psi): ")
